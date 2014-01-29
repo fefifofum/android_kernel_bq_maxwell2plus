@@ -44,6 +44,7 @@ obj-$(CONFIG_LCD_RK3168M_B101EW05) += lcd_hdmi_rk3168m_b101ew05.o
 obj-$(CONFIG_LCD_HJ050NA_06A)    += lcd_hj050na_06a.o
 obj-$(CONFIG_LCD_HSD100PXN_FOR_TDW851) += lcd_hsd100pxn_for_tdw851.o
 obj-$(CONFIG_LCD_HV070WSA100)    += lcd_hv070wsa.o
+obj-$(CONFIG_LCD_CLAA070WP03)    += lcd_claa070wp03.o
 obj-$(CONFIG_LCD_COMMON)    += lcd_common.o
 obj-$(CONFIG_LCD_RK2928_A720) += lcd_YQ70CPT9160.o
 obj-$(CONFIG_LCD_RK3168_AUO_A080SN03) += lcd_AUO_A080SN03.o
