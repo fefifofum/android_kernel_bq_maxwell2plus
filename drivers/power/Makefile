@@ -32,6 +32,7 @@ obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
 obj-$(CONFIG_BATTERY_S3C_ADC)	+= s3c_adc_battery.o
 obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
 obj-$(CONFIG_BATTERY_STC3100)	+= stc3100_battery.o
+obj-$(CONFIG_BATTERY_BQ24196)	+= bq24196_chargeIc.o
 obj-$(CONFIG_BATTERY_BQ27510)	+= bq27510_battery.o
 obj-$(CONFIG_BATTERY_BQ27541)	+= bq27541_battery.o
 obj-$(CONFIG_BATTERY_BQ3060)	+= bq3060_battery.o
