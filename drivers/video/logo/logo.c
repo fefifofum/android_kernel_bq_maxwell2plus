@@ -84,6 +84,14 @@ const struct linux_logo * __init_refok fb_find_logo(int depth)
 		/* Generic Linux logo */
 		logo = &logo_linux_clut224;
 #endif
+#ifdef CONFIG_LOGO_MAXWELL2LITE_CLUT224
+                /* Maxwell 2 Lite logo */
+                logo = &logo_maxwell2lite_clut224;
+#endif
+#ifdef CONFIG_LOGO_MAXWELL2PLUS_CLUT224
+                /* Maxwell 2 Plus logo */
+                logo = &logo_maxwell2plus_clut224;
+#endif
 #ifdef CONFIG_LOGO_PIPO_CLUT224
 		/* Generic Linux logo */
 		logo = &logo_pipo_clut224;
