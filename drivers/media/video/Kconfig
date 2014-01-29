@@ -952,7 +952,6 @@ config SOC_CAMERA_OV2640_RK
 config SOC_CAMERA_OV3640
 	tristate "ov3640 camera support for rockchip"
 	depends on SOC_CAMERA && I2C && VIDEO_RK29
-	default y
 	help
 	  This is a ov3640 camera driver for rockchip
 	  
@@ -984,7 +983,6 @@ config SOC_CAMERA_OV3660
 config SOC_CAMERA_OV5642
 	tristate "ov5642 camera support for rockchip"
 	depends on SOC_CAMERA && I2C && VIDEO_RK29
-	default y
 	help
 	  This is a ov5642 camera driver for rockchip
 
@@ -1023,7 +1021,6 @@ endchoice
 config SOC_CAMERA_OV5640
 	tristate "ov5640 camera support for rockchip"
 	depends on SOC_CAMERA && I2C && VIDEO_RK29
-	default y
 	help
 	  This is a ov5640 camera driver for rockchip
 
