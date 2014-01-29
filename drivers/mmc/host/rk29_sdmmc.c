@@ -1611,7 +1611,11 @@ static int rk29_sdmmc_get_cd(struct mmc_host *mmc)
 
         	cdetect = rk29_sdmmc_read(host->regs, SDMMC_CDETECT);
 
-            cdetect = (cdetect & SDMMC_CARD_DETECT_N)?0:1;
+        	#if defined(CONFIG_BQ_MAXWELL2PLUS)
+        		cdetect = (cdetect & SDMMC_CARD_DETECT_N)?1:0;
+        	#else
+        		cdetect = (cdetect & SDMMC_CARD_DETECT_N)?0:1;
+        	#endif
          #endif
          
             break;
