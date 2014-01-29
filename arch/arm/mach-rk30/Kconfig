@@ -6,6 +6,9 @@ config ARCH_RK3066B
 	depends on ARCH_RK30
 	bool
 
+config BQ_MAXWELL2PLUS
+	bool "BQ Maxwell 2 Plus"
+
 choice
 	prompt "Rockchip SoC Type"
 	depends on ARCH_RK30
@@ -56,6 +59,9 @@ choice
 
 config MACH_RK30_SDK
 	bool "RK30 SDK board"
+
+config MACH_RK30_MAXWELL2PLUS
+	bool "RK30 BQ Maxwell 2 Plus"
 	
 config MACH_RK30_DS975
 	bool "RK30 DS975 board"

@@ -34,6 +34,7 @@ obj-$(CONFIG_RK30_I2C_INSRAM) += i2c_sram.o
 obj-$(CONFIG_ARCH_RK30XX) += board.o
 board-$(CONFIG_MACH_RK3066_SDK) += board-rk30-sdk.o
 board-$(CONFIG_MACH_RK30_SDK) += board-rk30-sdk.o
+board-$(CONFIG_MACH_RK30_MAXWELL2PLUS) += board-rk30-maxwell2plus.o
 board-$(CONFIG_MACH_RK30_DS975) += board-rk30-ds975.o
 board-$(CONFIG_MACH_RK30_PHONE) += board-rk30-phone.o board-rk30-phone-key.o
 board-$(CONFIG_MACH_RK30_PHONE_PAD) += board-rk30-phonepad.o board-rk30-phonepad-key.o
