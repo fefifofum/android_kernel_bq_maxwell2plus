@@ -39,6 +39,9 @@
 
 void rk29_backlight_set(bool on);
 bool rk29_get_backlight_status(void);
+#ifdef CONFIG_POWER_ON_CHARGER_DISPLAY
+extern int get_boot_source(void);
+#endif
 static int hdmi_switch_complete = 0;
 #ifdef	CONFIG_FB_MIRRORING
 
@@ -1660,7 +1663,10 @@ int rk_fb_register(struct rk_lcdc_device_driver *dev_drv,
 		if(fb_prepare_logo(fb_inf->fb[0], FB_ROTATE_UR)) {
 			/* Start display and show logo on boot */
 			fb_set_cmap(&fb_inf->fb[0]->cmap, fb_inf->fb[0]);
-			fb_show_logo(fb_inf->fb[0], FB_ROTATE_UR);
+	#ifdef CONFIG_POWER_ON_CHARGER_DISPLAY
+		if((get_boot_source() != 2) || (board_boot_mode() == BOOT_MODE_REBOOT) || (board_boot_mode() == BOOT_MODE_RECOVERY))
+		fb_show_logo(fb_inf->fb[0], FB_ROTATE_UR);
+	#endif
 			fb_inf->fb[0]->fbops->fb_pan_display(&(fb_inf->fb[0]->var), fb_inf->fb[0]);
 		}
 #endif
