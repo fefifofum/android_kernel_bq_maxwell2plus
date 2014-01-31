@@ -156,7 +156,11 @@ struct rt5631_init_reg {
 #define DEF_VOL					0xd4//0xd4 -30dB 0xc0 0dB
 #endif
 #ifndef DEF_VOL_SPK
-#define DEF_VOL_SPK				0xc4
+	#ifdef CONFIG_BQ_MAXWELL2PLUS
+	#define DEF_VOL_SPK			0xc6
+	#else
+	#define DEF_VOL_SPK			0xc4
+	#endif
 #endif
 
 /*
@@ -203,7 +207,11 @@ static struct rt5631_init_reg init_list[] = {
 	{RT5631_AXO2MIXER_CTRL		, 0x8880},//OutMixer_R-->AXO2Mixer by default
 	{RT5631_SPK_MIXER_CTRL		, 0xd8d8},//DAC-->SpeakerMixer
 	{RT5631_SPK_MONO_OUT_CTRL	, 0x0c00},//Speaker volume-->SPOMixer(L-->L,R-->R)	
+#if defined(CONFIG_BQ_MAXWELL2PLUS)
+	{RT5631_GEN_PUR_CTRL_REG	, 0x1e00},//Speaker AMP ratio gain is 1.09x
+#else
 	{RT5631_GEN_PUR_CTRL_REG	, 0x4e00},//Speaker AMP ratio gain is 1.27x
+#endif
 #if defined(CONFIG_ADJUST_VOL_BY_CODEC)
 	{RT5631_SPK_MONO_HP_OUT_CTRL	, 0x0000},//HP from outputmixer,speaker out from SpeakerOut Mixer	
 #else
@@ -214,7 +222,11 @@ static struct rt5631_init_reg init_list[] = {
 	{RT5631_MIC_CTRL_1		, 0x8000},//set mic 1 to differnetial mode
 	{RT5631_GPIO_CTRL		, 0x0000},//set GPIO to input pin	
 //	{RT5631_JACK_DET_CTRL		, 0x4e80},//Jack detect for GPIO,high is HP,low is speaker	
+#if defined(CONFIG_BQ_MAXWELL2PLUS)
+	{RT5631_JACK_DET_CTRL		, 0x4e80},//Jack detect for GPIO,high is HP,low is speaker	
+#else
 	{RT5631_JACK_DET_CTRL		, 0x4bc0},//Jack detect for GPIO,high is speaker,low is hp	
+#endif
 };
 #define RT5631_INIT_REG_LEN ARRAY_SIZE(init_list)
 
@@ -2044,7 +2056,7 @@ static int rt5631_remove(struct snd_soc_codec *codec)
 
 
 #if (RT5631_SPK_TIMER == 1)	
-	/* Timer¡¡module¡¡uninstalling */
+	/* Timer module uninstalling */
 	int ret;
 	ret = del_timer(&spk_timer);
 	if(ret) printk("The timer is still in use...\n");
