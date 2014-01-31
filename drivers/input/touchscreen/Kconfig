@@ -1065,6 +1065,22 @@ config TOUCHSCREEN_FT5406
 
 	  If unsure, say N(but it's safe to say "Y").
 
+config TOUCHSCREEN_FT5606_BQ
+	tristate "BQ FT5406 touchscreens: FT5406 Interface"
+	depends on I2C2_RK30
+	help
+	  say Y here if you have a touchscreen interface using the FT5406
+	  controller,and your board-specific initialization code includes that
+	  in its table of I2C devices.
+
+	  If unsure, say N(but it's safe to say "Y").
+
+        config TOUCHSCREEN_FT5606_INVERTED
+                bool "BQ FT5606 touchscreen inverted"
+                depends on TOUCHSCREEN_FT5606_BQ
+                help
+                  Invert the orientation of the touchscreen (both axis).
+
 config TOUCHSCREEN_FT5X0X
 		tristate "ft5x0x touchscreen panel support "
 		depends on I2C2_RK29 || I2C2_RK30
