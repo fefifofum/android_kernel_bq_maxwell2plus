@@ -1614,7 +1614,7 @@ int sensor_register_slave(int type,struct i2c_client *client,
 {
 	int result = 0;
 	struct sensor_operate *ops = get_sensor_ops();
-	if((ops->id_i2c >= SENSOR_NUM_ID) || (ops->id_i2c <= ID_INVALID))
+	if((ops->id_i2c >= SENSOR_NUM_ID) || (ops->id_i2c <= ID_INVALID_l))
 	{	
 		printk("%s:%s id is error %d\n", __func__, ops->name, ops->id_i2c);
 		return -1;	
@@ -1631,7 +1631,7 @@ int sensor_unregister_slave(int type,struct i2c_client *client,
 {
 	int result = 0;
 	struct sensor_operate *ops = get_sensor_ops();
-	if((ops->id_i2c >= SENSOR_NUM_ID) || (ops->id_i2c <= ID_INVALID))
+	if((ops->id_i2c >= SENSOR_NUM_ID) || (ops->id_i2c <= ID_INVALID_l))
 	{	
 		printk("%s:%s id is error %d\n", __func__, ops->name, ops->id_i2c);
 		return -1;	
@@ -1680,7 +1680,7 @@ int sensor_probe(struct i2c_client *client, const struct i2c_device_id *devid)
 		goto out_no_free;	
 	}
 
-	if(((int)devid->driver_data >= SENSOR_NUM_ID) || ((int)devid->driver_data <= ID_INVALID))
+	if(((int)devid->driver_data >= SENSOR_NUM_ID) || ((int)devid->driver_data <= ID_INVALID_l))
 	{	
 		dev_err(&client->adapter->dev, "sensor id is error %d\n", (int)devid->driver_data);
 		result = -EFAULT;
@@ -1925,18 +1925,18 @@ static const struct i2c_device_id sensor_id[] = {
 	{"angle_lis3dh", ANGLE_ID_LIS3DH},	
 	/*gsensor*/
 	{"gsensor", ACCEL_ID_ALL},
-	{"gs_mma8452", ACCEL_ID_MMA845X},	
+	{"gs_mma8452", ACCEL_ID_MMA845X_l},	
 	{"gs_kxtik", ACCEL_ID_KXTIK},	
 	{"gs_kxtj9", ACCEL_ID_KXTJ9},
-	{"gs_lis3dh", ACCEL_ID_LIS3DH},
+	{"gs_lis3dh", ACCEL_ID_LIS3DH_l},
 	{"gs_mma7660", ACCEL_ID_MMA7660},
 	{"gs_mxc6225", ACCEL_ID_MXC6225},
 	/*compass*/
 	{"compass", COMPASS_ID_ALL},
-	{"ak8975", COMPASS_ID_AK8975},	
-	{"ak8963", COMPASS_ID_AK8963},
+	{"ak8975", COMPASS_ID_AK8975_l},	
+	{"ak8963", COMPASS_ID_AK8963_l},
 	{"ak09911", COMPASS_ID_AK09911},
-	{"mmc314x", COMPASS_ID_MMC314X},
+	{"mmc314x", COMPASS_ID_MMC314X_l},
 	/*gyroscope*/
 	{"gyro", GYRO_ID_ALL},	
 	{"l3g4200d_gryo", GYRO_ID_L3G4200D},

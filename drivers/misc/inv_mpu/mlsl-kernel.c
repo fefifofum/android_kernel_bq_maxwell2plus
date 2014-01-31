@@ -20,7 +20,7 @@
 #include "mlsl.h"
 #include <linux/i2c.h>
 #include "log.h"
-#include "mpu3050.h"
+#include "mpu6050b1.h"
 
 #define MPU_I2C_RATE 100*1000
 static int inv_i2c_write(struct i2c_adapter *i2c_adap,

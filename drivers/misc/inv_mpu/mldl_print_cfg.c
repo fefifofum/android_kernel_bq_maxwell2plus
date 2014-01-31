@@ -75,6 +75,7 @@ void mldl_print_cfg(struct mldl_cfg *mldl_cfg)
 	MPL_LOGV("product_revision = %02x\n", mpu_chip_info->product_revision);
 	MPL_LOGV("product_id       = %02x\n", mpu_chip_info->product_id);
 	MPL_LOGV("gyro_sens_trim   = %02x\n", mpu_chip_info->gyro_sens_trim);
+	MPL_LOGV("accel_sens_trim  = %02x\n", mpu_chip_info->accel_sens_trim);
 
 	MPL_LOGV("requested_sensors = %04x\n", inv_mpu_cfg->requested_sensors);
 	MPL_LOGV("ignore_system_suspend= %04x\n",

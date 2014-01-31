@@ -36,7 +36,6 @@
 #include <linux/wait.h>
 #include <linux/uaccess.h>
 #include <linux/io.h>
-#include <linux/gpio.h>
 #include <linux/mpu.h>
 #include "mpuirq.h"
 #include "mldl_cfg.h"
@@ -203,7 +202,7 @@ int mpuirq_init(struct i2c_client *mpu_client, struct mldl_cfg *mldl_cfg)
 	dev_info(&mpu_client->adapter->dev,
 		 "Module Param interface = %s\n", interface);
 	
-	mpuirq_dev_data.irq = gpio_to_irq(mpu_client->irq);
+	mpuirq_dev_data.irq = mpu_client->irq;
 	mpuirq_dev_data.pid = 0;
 	mpuirq_dev_data.accel_divider = -1;
 	mpuirq_dev_data.data_ready = 0;
