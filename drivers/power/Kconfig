@@ -233,8 +233,7 @@ config BATTERY_BQ27510
 
 config BATTERY_BQ27541
 	tristate "BQ27541 battery driver"
-	select I2C_DEV_RK29
-	depends on I2C && ARCH_RK29
+	depends on I2C
 	help
 	  Say Y here to enable support for batteries with BQ27541(I2C) chip.
 	
@@ -248,6 +247,18 @@ config CHECK_BATT_CAPACITY
 	tristate "check the capacity in BQ27510 battery if 1000mah write capacity for BATT_CAPACITY_MAH"
 	depends on BATTERY_BQ27510 || BATTERY_BQ3060
 	default n
+
+config REBOOT_TO_POWER_OFF
+	tristate "Reboot to power off 5% capacity"
+	depends on BATTERY_BQ27541 || BATTERY_BQ27410
+	help
+	  If you select reboot while battery level drops below 5% device shuts down instead of rebooting
+
+config CHARGER_LIMITED_BY_TEMP
+	tristate "Charger limited by temperature"
+	depends on BATTERY_BQ27541 || BATTERY_BQ27410
+	help
+	  Stop charging when temperature reach 50C and enable it when below 45C
 
 config BATT_CAPACITY_MAH
 	depends on CHECK_BATT_CAPACITY
@@ -360,6 +371,12 @@ config BATTERY_RK30_USB_CHARGE
         help
           say Y to enable suspport for the USB battery charge
 
+config BATTERY_RK30_USB_AND_CHARGE
+        tristate "RK30 USB AND AC CHARGE"
+        depends on BATTERY_RK30_ADC||BATTERY_RK30_ADC_FAC
+        help
+          say Y to enable suspport for the USB battery charge
+
 config BATTERY_RK30_VOL3V8
        tristate "the battery voltage is 3.8V"
         depends on BATTERY_RK30_ADC||BATTERY_RK30_ADC_FAC
@@ -403,5 +420,19 @@ config CHARGER_SMB347
 	help
 	  Say Y to include support for Summit Microelectronics SMB347
 	  Battery Charger.
+
+choice
+	prompt "Support battery type"
+	default BATTERY_BT_C0B5H
+
+config BATTERY_BT_C0B5H
+        bool "BT-C0B5H 4300mA"
+
+config BATTERY_BT_D1004_36722128
+        bool "BT_D1004_36722128 4300mA"
+
+config BATTERY_BT_B0B5G
+        bool "BT_B0B5G 4300mA"
+endchoice
 
 endif # POWER_SUPPLY

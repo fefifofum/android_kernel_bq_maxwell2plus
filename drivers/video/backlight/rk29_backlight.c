@@ -32,6 +32,7 @@
 #define PWM_APB_PRE_DIV      1000
 #define BL_STEP              (255)
 #define MAX_BRIGHTNESS_CORRECT (50)
+#define SYS_BL_MIN 10
 
 /*
  * Debug
@@ -48,6 +49,7 @@ static struct clk *pwm_clk;
 static void __iomem *pwm_base;
 static struct backlight_device *rk29_bl;
 static int suspend_flag = 0;
+static int bl_init = 0;
 
 
 int convertint(const char s[])  
@@ -103,20 +105,17 @@ static inline void rk29_bl_max_brightness_check(struct rk29_bl_info *rk29_bl_inf
 
 int rk29_bl_val_scalor_line(struct rk29_bl_info *rk29_bl_info,int brightness)
 {
-	//rk29_bl_min_brightness_check(rk29_bl_info);
-	//rk29_bl_max_brightness_check(rk29_bl_info);
-	if(rk29_bl_info->max_brightness<rk29_bl_info->min_brightness)
-		rk29_bl_info->max_brightness=rk29_bl_info->min_brightness;
-
-	if(brightness>rk29_bl_info->max_brightness)
-		brightness=rk29_bl_info->max_brightness;
-	else if(brightness<rk29_bl_info->min_brightness)
-		brightness=rk29_bl_info->min_brightness;
-	#if 0
-		brightness = brightness*(rk29_bl_info->max_brightness - rk29_bl_info->min_brightness);
-		brightness = (brightness/255) + rk29_bl_info->min_brightness;
-	#endif
-	return brightness;
+	u32 k_bl_range,sys_bl_range,k_bl;
+	if(brightness < SYS_BL_MIN)
+	{
+		k_bl = rk29_bl_info->min_brightness;
+	}else{
+		sys_bl_range = BL_STEP - SYS_BL_MIN;
+		k_bl_range = rk29_bl_info->max_brightness -rk29_bl_info->min_brightness;
+		k_bl = rk29_bl_info->min_brightness +  (brightness - SYS_BL_MIN) * k_bl_range / sys_bl_range;
+		
+	}
+	return k_bl;
 }
 int rk29_bl_val_scalor_conic(struct rk29_bl_info *rk29_bl_info,int brightness)
 {
@@ -290,6 +289,8 @@ EXPORT_SYMBOL(rk29_get_backlight_status);
 void rk29_backlight_set(bool on)
 {
 	printk("%s: set %d\n", __func__, on);
+	if(!bl_init)
+		return;
 	if(on){
 		rk29_bl->props.state &= ~BL_CORE_DRIVER3;
 		rk29_bl_update_status(rk29_bl);
@@ -300,9 +301,6 @@ void rk29_backlight_set(bool on)
 	return;
 }
 EXPORT_SYMBOL(rk29_backlight_set);
-#endif
-#ifdef CONFIG_BATTERY_RK30_ADC_FAC
-extern int adc_battery_notifier_call_chain(unsigned long val);
 #endif
 
 static int rk29_backlight_probe(struct platform_device *pdev)
@@ -383,7 +381,7 @@ static int rk29_backlight_probe(struct platform_device *pdev)
 	rk29_bl->props.brightness = BL_STEP / 2;
 	rk29_bl->props.state = BL_CORE_DRIVER1;		
 
-	schedule_delayed_work(&rk29_backlight_work, msecs_to_jiffies(rk29_bl_info->delay_ms));
+	schedule_delayed_work(&rk29_backlight_work, msecs_to_jiffies(0));
 	ret = device_create_file(&pdev->dev,&dev_attr_rk29backlight);
 	if(ret)
 	{
@@ -391,9 +389,7 @@ static int rk29_backlight_probe(struct platform_device *pdev)
 	}
 
 	register_early_suspend(&bl_early_suspend);
-#ifdef CONFIG_BATTERY_RK30_ADC_FAC
-	adc_battery_notifier_call_chain(BACKLIGHT_ON);
-#endif
+	bl_init = 1;
 	printk("RK29 Backlight Driver Initialized.\n");
 	return ret;
 }
