@@ -27,6 +27,7 @@
 #include <mach/board.h>
 #include <linux/irq.h>
 #include <linux/interrupt.h>
+#include <linux/power/bq27541_battery.h>
 
 
 
@@ -48,15 +49,40 @@
 #define BQ27500_FLAG_OTC		BIT(15)
 
 #define BQ27510_SPEED 			100 * 1000
-#define POWER_ON_PIN	RK29_PIN4_PA4
-//#define CHG_OK RK29_PIN4_PA3
-
-//#define BAT_LOW	RK29_PIN4_PA2
 
 
 int  virtual_battery_enable = 0;
 extern int dwc_vbus_status(void);
 static void bq27541_set(void);
+struct bq27541_platform_data *g_pdata;
+extern bool is_accharging(void);
+extern bool is_usbcharging(void);
+extern void kernel_power_off(void);
+extern void rk30_bat_unregister(void);
+
+#if defined(CONFIG_CHARGER_LIMITED_BY_TEMP)
+#define DIS_CHARGING_TEMP 450
+#define EN_CHARGING_TEMP 400
+extern void bq24196_charge_disable(void);
+extern void bq24196_charge_en(void);
+extern int check_charge_ok;
+static struct kobject *bq27541_kobj;
+static int stop_charging;
+static int temp_val = 0;
+int charge_en_flags = 0;
+int update_temp_ok = 0;
+#endif
+
+extern volatile bool low_usb_charge;
+extern int bq27541_init = 0;
+#ifdef CONFIG_BATTERY_BQ24196_OTG_MODE
+extern int bq24196_mode;
+#endif
+#if defined(CONFIG_REBOOT_TO_POWER_OFF)
+extern int charge_status_now;
+#endif
+
+struct mutex g_bq27541_mutex;
 
 
 #if 0
@@ -149,14 +175,18 @@ static const struct file_operations battery_proc_fops = {
 static int bq27541_read(struct i2c_client *client, u8 reg, u8 buf[], unsigned len)
 {
 	int ret;
+	mutex_lock(&g_bq27541_mutex);
 	ret = i2c_master_reg8_recv(client, reg, buf, len, BQ27510_SPEED);
+	mutex_unlock(&g_bq27541_mutex);
 	return ret; 
 }
 
 static int bq27541_write(struct i2c_client *client, u8 reg, u8 const buf[], unsigned len)
 {
 	int ret; 
+	mutex_lock(&g_bq27541_mutex);
 	ret = i2c_master_reg8_send(client, reg, buf, (int)len, BQ27510_SPEED);
+	mutex_unlock(&g_bq27541_mutex);
 	return ret;
 }
 
@@ -217,6 +247,15 @@ static int bq27541_battery_temperature(struct bq27541_device_info *di)
 	temp = temp - 2731;  //K
 	DBG("Enter:%s %d--temp = %d\n",__FUNCTION__,__LINE__,temp);
 
+#if defined(CONFIG_CHARGER_LIMITED_BY_TEMP)
+	if((temp >= DIS_CHARGING_TEMP) && (0 == charge_en_flags)){
+		bq24196_charge_disable();
+		charge_en_flags = 1;
+	}else if((temp <= EN_CHARGING_TEMP) && (1 == charge_en_flags)){
+		bq24196_charge_en();
+		charge_en_flags = 0;
+	}
+#endif
 //	rk29_pm_power_off();
 	return temp;
 }
@@ -306,10 +345,13 @@ static int bq27541_battery_current(struct bq27541_device_info *di)
  * Return the battery Relative State-of-Charge
  * Or < 0 if something fails.
  */
+static int bq27541_cap = 0;
 static int bq27541_battery_rsoc(struct bq27541_device_info *di)
 {
 	int ret;
 	int rsoc = 0;
+	int flags = 0;
+	int status = 0;
 	#if 0
 	int nvcap = 0,facap = 0,remcap=0,fccap=0,full=0,cnt=0;
 	int art = 0, artte = 0, ai = 0, tte = 0, ttf = 0, si = 0;
@@ -330,6 +372,17 @@ static int bq27541_battery_rsoc(struct bq27541_device_info *di)
 	}
 	rsoc = get_unaligned_le16(buf);
 	DBG("Enter:%s %d--rsoc = %d\n",__FUNCTION__,__LINE__,rsoc);
+
+	/* covert the capacity range */
+	rsoc = min(rsoc, 100);
+	if ((g_pdata != NULL) && g_pdata->capacity_max && g_pdata->capacity_min) {
+		rsoc = max(rsoc, g_pdata->capacity_min);
+		rsoc = ((rsoc - g_pdata->capacity_min) * 100 +
+			(g_pdata->capacity_max - g_pdata->capacity_min) / 2)
+			/ (g_pdata->capacity_max - g_pdata->capacity_min);
+	}
+
+	bq27541_cap = rsoc;
 
 	#if defined (CONFIG_NO_BATTERY_IC)
 	rsoc = 100;
@@ -426,12 +479,43 @@ static int bq27541_battery_status(struct bq27541_device_info *di,
 	}
 	flags = get_unaligned_le16(buf);
 	DBG("Enter:%s %d--status = %x\n",__FUNCTION__,__LINE__,flags);
+#if 0
 	if (flags & BQ27500_FLAG_FC)
 		status = POWER_SUPPLY_STATUS_FULL;
 	else if (flags & BQ27500_FLAG_DSC)
 		status = POWER_SUPPLY_STATUS_DISCHARGING;
 	else
 		status = POWER_SUPPLY_STATUS_CHARGING;
+#else
+	if ((g_pdata != NULL) && g_pdata->get_charging_stat)
+	{
+#ifdef CONFIG_BATTERY_BQ24196_OTG_MODE
+		if(!(*g_pdata->get_charging_stat)() || (bq24196_mode == 1))
+#else
+		if(!(*g_pdata->get_charging_stat)())
+#endif
+			status = POWER_SUPPLY_STATUS_DISCHARGING;
+		else if(1 == (*g_pdata->get_charging_stat)()){
+			if ((bq27541_cap > 99) && (flags & BQ27500_FLAG_FC))
+				status = POWER_SUPPLY_STATUS_FULL;
+			else
+				status = POWER_SUPPLY_STATUS_CHARGING;
+		}
+	}
+#endif
+#if defined(CONFIG_CHARGER_LIMITED_BY_TEMP)
+		if((1 == check_charge_ok) && (!strstr(saved_command_line,"charger"))){
+			if(1 == charge_en_flags)
+			{
+				if(status != POWER_SUPPLY_STATUS_DISCHARGING){
+					status = POWER_SUPPLY_STATUS_DISCHARGING;
+					stop_charging = 1;
+				}
+			}else{
+				stop_charging = 0;
+			}
+		}
+#endif
 
 	val->intval = status;
 	return 0;
@@ -519,25 +603,31 @@ static int bq27541_battery_get_property(struct power_supply *psy,
 		ret = bq27541_battery_status(di, val);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+		val->intval = bq27541_battery_voltage(di);
+		break;
 	case POWER_SUPPLY_PROP_PRESENT:
+		#if 0
 		val->intval = bq27541_battery_voltage(di);
 		if (psp == POWER_SUPPLY_PROP_PRESENT){
 			val->intval = val->intval <= 0 ? 0 : 1;
 		}
+		#else
+		val->intval = 1;
+		#endif
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		val->intval = bq27541_battery_current(di);
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
-		if (di->power_down == 1){      // < 3.4V    power down ,capacity = 0;
-			val->intval = 0;
-		}else {
-			val->intval = bq27541_battery_rsoc(di);
-		}
+		val->intval = bq27541_battery_rsoc(di);
 		break;
 
 	case POWER_SUPPLY_PROP_TEMP:
 		val->intval = bq27541_battery_temperature(di);
+#if defined(CONFIG_CHARGER_LIMITED_BY_TEMP)
+			if(1 == charge_en_flags)
+				temp_val = val->intval;
+#endif
 		break;
 
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
@@ -613,6 +703,10 @@ static void bq27541_battery_work(struct work_struct *work)
 {
 	struct bq27541_device_info *di = container_of(work, struct bq27541_device_info, work.work); 
 	bq27541_battery_update_status(di);
+#if defined(CONFIG_CHARGER_LIMITED_BY_TEMP)
+	if((1 == charge_en_flags) && (temp_val >= DIS_CHARGING_TEMP))
+		update_temp_ok = 1;
+#endif
 	/* reschedule for the next time */
 	schedule_delayed_work(&di->work, di->interval);
 }
@@ -662,6 +756,62 @@ static void bq27541_set(void)
 		printk("bq27541 write 0x21 success\n");
 }
 
+/**********************
+Boot threshold voltage limit is set in the ADC driver,judge here only to prevent 0% capacity but voltage is more than 3.5V
+leading to shut down immediately after boot
+***********************/
+static void battery_capacity_check(struct bq27541_device_info *di)
+{
+	int rsoc;
+	rsoc = bq27541_battery_rsoc(di);
+	if(rsoc <= 0){
+		if(is_usbcharging()){
+			printk("usb charging and capacity less than 0%,continue charging\n");
+			low_usb_charge = true;
+			return;
+		}else if(!is_accharging()){
+			printk("no charging and capacity less than 0%,power off\n");
+			kernel_power_off();
+		}
+	}
+#if defined(CONFIG_REBOOT_TO_POWER_OFF)
+	if ((board_boot_mode() == BOOT_MODE_REBOOT) )
+		if((0 == charge_status_now) && (rsoc <= 5))
+			kernel_power_off();
+#endif
+	return;
+}
+
+#if defined(CONFIG_CHARGER_LIMITED_BY_TEMP)
+static ssize_t stop_charging_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", stop_charging);
+}
+
+static DEVICE_ATTR(stopcharging, 0644, stop_charging_show, NULL);
+static int bq27541_sysfs_init(void)
+{
+	int ret;
+	bq27541_kobj = kobject_create_and_add("bq27541_bat", NULL);
+	if (bq27541_kobj == NULL) {
+		printk("bq27541_sysfs_init: subsystem_register failed\n");
+		ret = -ENOMEM;
+		goto err;
+	}
+	ret = sysfs_create_file(bq27541_kobj, &dev_attr_stopcharging.attr);
+	if (ret) {
+		printk("bq27541_sysfs_init: sysfs_create_file failed\n");
+		goto err0;
+	}
+	return 0;
+err0:
+	kobject_del(bq27541_kobj);
+err:
+	return ret;
+}
+#endif
+
 static int bq27541_battery_probe(struct i2c_client *client,
 				 const struct i2c_device_id *id)
 {
@@ -673,6 +823,7 @@ static int bq27541_battery_probe(struct i2c_client *client,
 	int volt;
 	DBG("**********  bq27541_battery_probe**************  ");
 	pdata = client->dev.platform_data;
+	g_pdata = pdata;
 	
 	di = kzalloc(sizeof(*di), GFP_KERNEL);
 	if (!di) {
@@ -682,7 +833,7 @@ static int bq27541_battery_probe(struct i2c_client *client,
 	}
 	i2c_set_clientdata(client, di);
 	di->dev = &client->dev;
-	di->bat.name = "bq27541-battery";
+	di->bat.name = "battery";
 	di->client = client;
 	/* 4 seconds between monotor runs interval */
 	di->interval = msecs_to_jiffies(4 * 1000);
@@ -696,6 +847,16 @@ static int bq27541_battery_probe(struct i2c_client *client,
 	
 	bq27541_powersupply_init(di);
 
+	mutex_init(&g_bq27541_mutex);
+
+	retval = bq27541_read(di->client,BQ27x00_REG_FLAGS, buf, 2);
+	if (retval < 0) {
+		printk("can't find bq27541\n");
+		goto batt_failed_2;
+	}else{
+		rk30_bat_unregister();
+		bq27541_init = 1;
+	}
 	
 	
 	retval = power_supply_register(&client->dev, &di->bat);
@@ -704,92 +865,20 @@ static int bq27541_battery_probe(struct i2c_client *client,
 		goto batt_failed_4;
 	}
 	bq27541_di = di;
+#if 0
 	retval = power_supply_register(&client->dev, &di->ac);
 	if (retval) {
 		dev_err(&client->dev, "failed to register ac\n");
 		goto batt_failed_4;
 	}
+#endif
 	INIT_DELAYED_WORK(&di->work, bq27541_battery_work);
 	schedule_delayed_work(&di->work, di->interval);
 	dev_info(&client->dev, "support ver. %s enabled\n", DRIVER_VERSION);
 
-#if  !defined (CONFIG_NO_BATTERY_IC)
-
-	// no battery  , no power up
-	gpio_request(POWER_ON_PIN, "poweronpin");
-	gpio_request(pdata->bat_check_pin, NULL);
-	gpio_direction_input(pdata->bat_check_pin);
-	gpio_request(pdata->chgok_check_pin, "CHG_OK");
-	gpio_direction_input(pdata->chgok_check_pin);
-
-	val = gpio_get_value(pdata->bat_check_pin);
-	if (val == 1){
-		printk("\n\n!!! bat_low  high !!!\n\n");
-		val = bq27541_read(di->client,BQ27x00_REG_VOLT,buf,2);
-		if (val < 0){
-			printk("\n\n!!! bq i2c err! no battery,  power down\n!!!\n\n");
-			gpio_direction_output(POWER_ON_PIN, GPIO_LOW);	
-			while(1){
-				gpio_set_value(POWER_ON_PIN, GPIO_LOW);
-				mdelay(100);
-			}
-		}
-
-	}else{
-			
-		printk("\n\n!!! bat_low  low !!!\n\n");
-		val = gpio_get_value(pdata->chgok_check_pin);
-		if (val == 1){
-			printk("no battery, power down \n");
-			gpio_direction_output(POWER_ON_PIN, GPIO_LOW);
-			while(1){
-				gpio_set_value(POWER_ON_PIN, GPIO_LOW);
-				mdelay(100);
-			}
-		}else{
-			mdelay(1000);
-			val = gpio_get_value(pdata->chgok_check_pin);
-			if (val == 1){
-				printk("no battery, power down \n");
-				gpio_direction_output(POWER_ON_PIN, GPIO_LOW);			
-				while(1){
-					gpio_set_value(POWER_ON_PIN, GPIO_LOW);
-					mdelay(100);
-				}
-			}
-		}
-
-	}
-
-//	gpio_free(POWER_ON_PIN);
-//	gpio_free(pdata->bat_check_pin);
-	gpio_free(pdata->chgok_check_pin);
-
-
-	//smaller  3.4V , no power up
-	if (gpio_get_value(di->dc_check_pin) && (gpio_get_value(pdata->bat_check_pin) == 0)){
-			printk("no AC && battery low ,so power down \n");
-			gpio_direction_output(POWER_ON_PIN, GPIO_LOW);			
-			while(1){
-				printk("no AC && battery low ,so power down \n");
-				gpio_set_value(POWER_ON_PIN, GPIO_LOW);
-				mdelay(100);
-			}
-	}	
-
-	
-	// battery low irq
-	di->wake_irq = gpio_to_irq(pdata->bat_check_pin);
-	retval = request_irq(di->wake_irq, bq27541_bat_wakeup, IRQF_TRIGGER_FALLING, "bq27541_battery", di);
-	if (retval) {
-		printk("failed to request bat det irq\n");
-		goto err_batirq_failed;
-	}
-	
-	INIT_DELAYED_WORK(&di->wakeup_work, bq27541_battery_wake_work);
-	enable_irq_wake(di->wake_irq);
-
-
+	battery_capacity_check(di);
+#if defined(CONFIG_CHARGER_LIMITED_BY_TEMP)
+	bq27541_sysfs_init();
 #endif
 	
 	return 0;
