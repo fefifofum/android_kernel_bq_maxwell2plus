@@ -419,7 +419,7 @@ static void rk29_backlight_shutdown(struct platform_device *pdev)
 	struct rk29_bl_info *rk29_bl_info = pdev->dev.platform_data;
 
 	unregister_early_suspend(&bl_early_suspend);
-
+/*
 	rk29_bl->props.brightness >>= 1;
 	rk29_bl_update_status(rk29_bl);
 	mdelay(100);
@@ -427,7 +427,7 @@ static void rk29_backlight_shutdown(struct platform_device *pdev)
 	rk29_bl->props.brightness >>= 1;
 	rk29_bl_update_status(rk29_bl);
 	mdelay(100);
-
+*/
 	rk29_bl->props.brightness = 0;
 	rk29_bl_update_status(rk29_bl);
 
