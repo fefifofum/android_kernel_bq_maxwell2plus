@@ -9,7 +9,11 @@
 /* Base */
 #define SCREEN_TYPE		SCREEN_RGB
 #define LVDS_FORMAT		LVDS_8BIT_1
+#if defined(CONFIG_BQ_MAXWELL2LITE)
+#define OUT_FACE		OUT_D888_P666
+#else
 #define OUT_FACE		OUT_P888
+#endif
 #define DCLK			47000000
 #define LCDC_ACLK       	150000000     //29 lcdc axi DMA ÆµÂÊ
 
