@@ -433,6 +433,9 @@ config BATTERY_BT_D1004_36722128
 
 config BATTERY_BT_B0B5G
         bool "BT_B0B5G 4300mA"
+
+config BATTERY_BT_B0B6G
+	bool "BT_B0B6G 4500mA"
 endchoice
 
 endif # POWER_SUPPLY

@@ -104,6 +104,11 @@ char gDischargeFlag[3] = {"on "};
 #define BATT_ZERO_VOL_VALUE                            3500              	//power down voltage
 #define BATT_NOMAL_VOL_VALUE                         3800
 #define BATT_CHARGE_OFFSET				10
+#elif defined(CONFIG_BATTERY_BT_B0B6G)
+#define BATT_MAX_VOL_VALUE                             4120               	//Full  charge volate
+#define BATT_ZERO_VOL_VALUE                            3500              	//power down voltage
+#define BATT_NOMAL_VOL_VALUE                         3800
+#define BATT_CHARGE_OFFSET				10
 #elif defined(CONFIG_BATTERY_BT_D1004_36722128)
 #define BATT_MAX_VOL_VALUE                             4194               	//Full  charge volate
 #define BATT_ZERO_VOL_VALUE                            3500              	//power down voltage
@@ -122,6 +127,13 @@ static int batt_table[2*BATT_NUM+6] =
        0x4B434F52, 0x7461625F, 0x79726574, 0, 200, 120,
        3500, 3586, 3626, 3661, 3687, 3711, 3758, 3810, 3865, 3944, 4045,       //discharge
        3550, 3934, 3974, 3999, 4033, 4079, 4138, 4171, 4172, 4176, 4179,       //ac charge
+};
+#elif defined(CONFIG_BATTERY_BT_B0B6G)
+static int batt_table[2*BATT_NUM+6] =
+{
+	0x4B434F52,0x7461625F,0x79726574,0,100,100,
+	3500, 3552, 3583, 3600, 3635, 3676, 3720, 3764, 3845, 3903, 4008,       //discharge
+	3676, 3947, 3987, 4008, 4048, 4106, 4127, 4142, 4145, 4152, 4155	//ac charge
 };
 #elif defined(CONFIG_BATTERY_BT_D1004_36722128)	//D7803
 static int batt_table[2*BATT_NUM+6] =
