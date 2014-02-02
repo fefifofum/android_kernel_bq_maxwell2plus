@@ -1089,6 +1089,12 @@ config SOC_CAMERA_GC2035
         help
           This is a GC2035 camera driver for rockchip
 
+config SOC_CAMERA_GC2035_FRONT
+	tristate "GC2035_FRONT support for rockchip"
+	depends on SOC_CAMERA && I2C
+	help
+	  This is a GC2035_FRONT camera driver for rockchip
+
 config SOC_CAMERA_HI253
 	tristate "HI253 support for rockchip"
 	depends on SOC_CAMERA && I2C

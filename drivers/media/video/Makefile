@@ -108,6 +108,7 @@ obj-$(CONFIG_SOC_CAMERA_GC0328)     += gc0328.o
 obj-$(CONFIG_SOC_CAMERA_GC0309)		+= gc0309.o
 obj-$(CONFIG_SOC_CAMERA_GC2015)		+= gc2015.o
 obj-$(CONFIG_SOC_CAMERA_GC2035)         += gc2035.o
+obj-$(CONFIG_SOC_CAMERA_GC2035_FRONT)	+= gc2035_front.o
 obj-$(CONFIG_SOC_CAMERA_SIV120B)	+= siv120b.o
 obj-$(CONFIG_SOC_CAMERA_SIV121D)	+= siv121d.o
 obj-$(CONFIG_SOC_CAMERA_SID130B)	+= sid130B.o
@@ -228,8 +229,11 @@ ifeq ($(CONFIG_ARCH_RK29),y)
 obj-$(CONFIG_VIDEO_RKCIF_WORK_ONEFRAME)  += rk29_camera_oneframe.o
 obj-$(CONFIG_VIDEO_RKCIF_WORK_PINGPONG)	+= rk29_camera_pingpang.o
 endif
+
+ifneq ($(CONFIG_SOC_CAMERA_GC2035_FRONT),y)
 obj-$(CONFIG_VIDEO_RKCIF_WORK_ONEFRAME)  += generic_sensor.o
 obj-$(CONFIG_VIDEO_RKCIF_WORK_PINGPONG)  += generic_sensor.o
+endif
 
 obj-$(CONFIG_VIDEO_RK29XX_VOUT)		+= rk29xx/
 obj-$(CONFIG_VIDEO_SH_MOBILE_CSI2)	+= sh_mobile_csi2.o
