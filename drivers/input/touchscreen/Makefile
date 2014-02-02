@@ -75,6 +75,7 @@ obj-$(CONFIG_EETI_EGALAX)		+= eeti_egalax_i2c.o
 obj-$(CONFIG_ATMEL_MXT224)		+= atmel_maxtouch.o
 obj-$(CONFIG_ATMEL_MXT1386)		+= atmel_mxt1386.o
 obj-$(CONFIG_TOUCHSCREEN_GT801_IIC)	+= gt801_ts.o
+obj-$(CONFIG_TOUCHSCREEN_GT811_BQ)      += gt811_bq.o goodix811_tool.o
 obj-$(CONFIG_TOUCHSCREEN_GT811_IIC)	+= gt811_ts.o
 obj-$(CONFIG_TOUCHSCREEN_86V_GT811_IIC)	+= 86v_gt811_ts.o
 obj-$(CONFIG_TOUCHSCREEN_GT82X_IIC)	+= goodix_touch_82x.o

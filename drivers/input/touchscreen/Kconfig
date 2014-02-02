@@ -1001,6 +1001,10 @@ config TOUCHSCREEN_GT818_IIC
 	tristate "GT818_IIC based touchscreens"
 	depends on I2C2_RK29
 
+config TOUCHSCREEN_GT811_BQ
+	tristate "GT811_IIC BQ based touchscreens"
+        depends on I2C2_RK30
+
 config TOUCHSCREEN_PIXCIR
 	tristate "PIXCIR_IIC based touchscreens"
 	depends on I2C2_RK29
