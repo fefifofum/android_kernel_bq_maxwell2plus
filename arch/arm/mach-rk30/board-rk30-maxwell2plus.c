@@ -68,6 +68,9 @@
 #if defined (CONFIG_BATTERY_BQ27541)
 #include <linux/power/bq27541_battery.h>
 #endif
+#ifdef CONFIG_TOUCHSCREEN_GT811_BQ
+#include <linux/gt811.h>
+#endif
 #ifdef CONFIG_TOUCHSCREEN_FT5606_BQ
 #include <linux/i2c/ft5x06_ts2.h>
 #endif
@@ -75,7 +78,11 @@
 #include <linux/mpu.h>
 #endif
 
+#if defined(CONFIG_BQ_MAXWELL2LITE)
+#include "board-rk30-maxwell2lite-camera.c"
+#else
 #include "board-rk30-maxwell2plus-camera.c"
+#endif
 
 #include <plat/key.h>
 static struct rk29_keys_button key_button[] = {
@@ -135,6 +142,85 @@ struct rk29_keys_platform_data rk29_keys_pdata = {
 	.chn = 1, // chn: 0-7, if do not use ADC, set 'chn' -1
 };
 
+#ifdef CONFIG_TOUCHSCREEN_GT811_BQ
+#define TOUCH_ENABLE_PIN	INVALID_GPIO
+#define TOUCH_INT_PIN		RK30_PIN4_PC2
+#define TOUCH_RESET_PIN		RK30_PIN4_PD0
+int goodix811_init_platform_hw(void)
+{
+	struct regulator *ldo;
+	int ret;
+
+	if (TOUCH_ENABLE_PIN != INVALID_GPIO) {
+		ret = gpio_request(TOUCH_ENABLE_PIN, "goodix power pin");
+		if (ret != 0) {
+			gpio_free(TOUCH_ENABLE_PIN);
+			printk("goodix power error\n");
+			return -EIO;
+		}
+		gpio_direction_output(TOUCH_ENABLE_PIN, 0);
+		gpio_set_value(TOUCH_ENABLE_PIN, GPIO_LOW);
+		msleep(100);
+	}
+
+	if (TOUCH_RESET_PIN != INVALID_GPIO) {
+		ret = gpio_request(TOUCH_RESET_PIN, "goodix reset pin");
+		if (ret != 0) {
+			gpio_free(TOUCH_RESET_PIN);
+			printk("goodix gpio_request error\n");
+			return -EIO;
+		}
+		gpio_direction_output(TOUCH_RESET_PIN, 1);
+		msleep(100);
+		gpio_set_value(TOUCH_RESET_PIN, GPIO_LOW);
+		msleep(100);
+		gpio_set_value(TOUCH_RESET_PIN, GPIO_HIGH);
+		msleep(500);
+	}
+	return 0;
+}
+
+struct goodix_811_platform_data  goodix_info = {
+	//.model = 8105,
+	//.irq_pin = RK30_PIN4_PC2,
+	.reset= TOUCH_RESET_PIN,
+	.init_platform_hw = goodix811_init_platform_hw,
+};
+
+int goodix_init_platform_hw(void)
+{
+	int ret;
+
+	if (TOUCH_ENABLE_PIN != INVALID_GPIO) {
+		ret = gpio_request(TOUCH_ENABLE_PIN, "goodix power pin");
+		if (ret != 0) {
+			gpio_free(TOUCH_ENABLE_PIN);
+			printk("goodix power error\n");
+			return -EIO;
+		}
+		gpio_direction_output(TOUCH_ENABLE_PIN, 0);
+		gpio_set_value(TOUCH_ENABLE_PIN, GPIO_LOW);
+		gpio_free(TOUCH_ENABLE_PIN);
+		msleep(100);
+	}
+
+	if (TOUCH_RESET_PIN != INVALID_GPIO) {
+		ret = gpio_request(TOUCH_RESET_PIN, "goodix reset pin");
+		if (ret != 0) {
+			gpio_free(TOUCH_RESET_PIN);
+			printk("goodix gpio_request error\n");
+			return -EIO;
+		}
+		gpio_direction_output(TOUCH_RESET_PIN, 0);
+		gpio_set_value(TOUCH_RESET_PIN, GPIO_LOW);
+		gpio_free(TOUCH_RESET_PIN);
+		msleep(100);
+	}
+
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_TOUCHSCREEN_FT5606_BQ
 int ft5x0x_init_platform_hw(void)
 {
@@ -162,7 +248,11 @@ static struct spi_board_info board_spi_devices[] = {
 #define PWM_MUX_MODE      GPIO0D_PWM2
 #define PWM_MUX_MODE_GPIO GPIO0D_GPIO0D6
 #define PWM_GPIO 	  RK30_PIN0_PD6
+#if defined(CONFIG_BQ_MAXWELL2PLUS)
 #define PWM_EFFECT_VALUE  1
+#else
+#define PWM_EFFECT_VALUE  0
+#endif
 
 #define LCD_DISP_ON_PIN
 
@@ -232,7 +322,7 @@ static struct rk29_bl_info rk29_bl_info = {
 	.io_deinit = rk29_backlight_io_deinit,
 	.pwm_suspend = rk29_backlight_pwm_suspend,
 	.pwm_resume = rk29_backlight_pwm_resume,
-#if defined(CONFIG_BQ_MAXWELL2PLUS)
+#if defined(CONFIG_BQ_MAXWELL2LITE) || defined(CONFIG_BQ_MAXWELL2PLUS)
 	.min_brightness = 15,
 #endif
 };
@@ -406,6 +496,26 @@ struct platform_device rk30_device_sew868 = {
 		.platform_data = &rk30_sew868_info,
 	}    	
     };
+#endif
+
+#ifdef CONFIG_GS_MMA7660
+#define MMA7660_INT_PIN   RK30_PIN4_PC0
+static int mma7660_init_platform_hw(void)
+{
+	rk30_mux_api_set(GPIO4C0_SMCDATA0_TRACEDATA0_NAME, GPIO4C_GPIO4C0);
+
+	return 0;
+}
+
+#if defined(CONFIG_BQ_MAXWELL2LITE)
+static struct sensor_platform_data mma7660_info = {
+	.type = SENSOR_TYPE_ACCEL,
+	.irq_enable = 1,
+	.poll_delay_ms = 20,
+        .init_platform_hw = mma7660_init_platform_hw,
+        .orientation = { 0, 1, 0, 0, 0, -1, 1, 0, 0},
+};
+#endif
 #endif
 
 #ifdef CONFIG_MPU_SENSORS_MPU6050B1
@@ -1046,6 +1156,8 @@ struct bq27541_platform_data bq27541_data = {
 	.capacity_max = 100,
 #if defined(CONFIG_BATTERY_BT_C0B5H)
 	.capacity_min = 6,
+#elif defined (CONFIG_BATTERY_BT_B0B6G)
+	.capacity_min = 4,
 #else
 	.capacity_min = 5,
 #endif
@@ -1240,6 +1352,15 @@ static struct i2c_board_info __initdata i2c0_info[] = {
 		.flags		= 0,
         },
 #endif
+#if defined (CONFIG_GS_MMA7660)
+	{
+		.type	        = "gs_mma7660",
+		.addr	        = 0x4c,
+		.flags	        = 0,
+		.irq	        = MMA7660_INT_PIN,
+		.platform_data = &mma7660_info,
+	},
+#endif
 #ifdef CONFIG_MPU_SENSORS_MPU6050B1
         {
 		.type		= "mpu6050",
@@ -1314,6 +1435,15 @@ void __sramfunc board_pmu_resume(void)
 
 #ifdef CONFIG_I2C2_RK30
 static struct i2c_board_info __initdata i2c2_info[] = {
+#if defined(CONFIG_TOUCHSCREEN_GT811_BQ)
+	{
+		.type          = "Goodix-TS",
+		.addr          = 0x5d,
+		.flags         = 0,
+		.irq           = TOUCH_INT_PIN,
+		.platform_data = &goodix_info,
+	},
+#endif
 #if defined(CONFIG_TOUCHSCREEN_FT5606_BQ)
 	{
 		.type		= "ft5x0x_ts",
@@ -1376,6 +1506,9 @@ static void __init rk30_i2c_register_board_info(void)
 	i2c_register_board_info(5, i2c_gpio_info, ARRAY_SIZE(i2c_gpio_info));
 #endif
 }
+#if defined(CONFIG_TOUCHSCREEN_GT811_BQ)
+	goodix_init_platform_hw();
+#endif
 // end of i2c
 
 #define POWER_ON_PIN RK30_PIN6_PB0 // power_hold

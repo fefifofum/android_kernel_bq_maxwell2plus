@@ -6,6 +6,9 @@ config ARCH_RK3066B
 	depends on ARCH_RK30
 	bool
 
+config BQ_MAXWELL2LITE
+	bool "BQ Maxwell 2 Lite"
+
 config BQ_MAXWELL2PLUS
 	bool "BQ Maxwell 2 Plus"
 
