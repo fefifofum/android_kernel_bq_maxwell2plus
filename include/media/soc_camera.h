@@ -78,6 +78,7 @@ struct soc_camera_host_ops {
 	int (*get_formats)(struct soc_camera_device *, unsigned int,
 			   struct soc_camera_format_xlate *);
 	void (*put_formats)(struct soc_camera_device *);
+	void (*set_scale_mode)(struct soc_camera_device *icd,int scale_mode);
 	int (*cropcap)(struct soc_camera_device *, struct v4l2_cropcap *);
 	int (*get_crop)(struct soc_camera_device *, struct v4l2_crop *);
 	int (*set_crop)(struct soc_camera_device *, struct v4l2_crop *);
@@ -144,6 +145,7 @@ struct soc_camera_link {
 	int (*add_device)(struct soc_camera_link *, struct device *);
 	void (*del_device)(struct soc_camera_link *);
 	/* Optional callbacks to power on or off and reset the sensor */
+	unsigned int (*get_pwdpin)(struct device *, int *);
 	int (*power)(struct device *, int);
 	int (*reset)(struct device *);
 	int (*powerdown)(struct device *, int);		/* ddl@rock-chisp.com : support sensor powerdown  */
@@ -155,6 +157,8 @@ struct soc_camera_link {
 	int (*set_bus_param)(struct soc_camera_link *, unsigned long flags);
 	unsigned long (*query_bus_param)(struct soc_camera_link *);
 	void (*free_bus)(struct soc_camera_link *);
+	int fov_v;
+	int fov_h;
 };
 
 static inline struct soc_camera_device *to_soc_camera_dev(

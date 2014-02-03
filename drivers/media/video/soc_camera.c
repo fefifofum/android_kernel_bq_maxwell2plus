@@ -36,19 +36,9 @@
 #include <media/videobuf-core.h>
 #include <media/videobuf2-core.h>
 #include <media/soc_mediabus.h>
-
-/*
-*			 Driver Version Note
-*
-*v0.1.1 : 
-*         1.Turn off cif and sensor before streamoff videobuf;
-*         2.Don't free videobuf struct, free operation run in next requset buffer;
-*
-*/
-
-#define RK_SOC_CAMERA_VERSION KERNEL_VERSION(0, 1, 1)
-static int version = RK_SOC_CAMERA_VERSION;
-module_param(version, int, S_IRUGO);
+#include<../../../arch/arm/mach-rk30/include/mach/io.h>
+#include<../../../arch/arm/mach-rk30/include/mach/gpio.h>
+//#include<../../../arch/arm/mach-rk30/include/mach/iomux.h>
 
 /* Default to VGA resolution */
 #define DEFAULT_WIDTH	640
@@ -824,10 +814,6 @@ static int soc_camera_streamoff(struct file *file, void *priv,
 
 	if (icd->streamer != file)
 		return -EBUSY;
-    /* ddl@rock-chips.com: v0.1.1 */
-    v4l2_subdev_call(sd, video, s_stream, 0);
-    if (ici->ops->s_stream)
-		ici->ops->s_stream(icd, 0);				/* ddl@rock-chips.com : Add stream control for host */
 
 	/*
 	 * This calls buf_release from host driver's videobuf_queue_ops for all
@@ -838,8 +824,11 @@ static int soc_camera_streamoff(struct file *file, void *priv,
 	else
 		vb2_streamoff(&icd->vb2_vidq, i);
 
-    /* ddl@rock-chips.com: this code is invalidate, free can be run in requset buf */
-    //videobuf_mmap_free(&icd->vb_vidq);          /* ddl@rock-chips.com : free video buf */
+	v4l2_subdev_call(sd, video, s_stream, 0);
+    if (ici->ops->s_stream)
+		ici->ops->s_stream(icd, 0);				/* ddl@rock-chips.com : Add stream control for host */
+
+    videobuf_mmap_free(&icd->vb_vidq);          /* ddl@rock-chips.com : free video buf */
 	
 	return 0;
 }
@@ -1042,6 +1031,7 @@ static int soc_camera_s_crop(struct file *file, void *fh,
 
 	dev_dbg(&icd->dev, "S_CROP(%ux%u@%u:%u)\n",
 		rect->width, rect->height, rect->left, rect->top);
+	  ici->ops->set_scale_mode(icd,rect->height);
 
 	/* If get_crop fails, we'll let host and / or client drivers decide */
 	ret = ici->ops->get_crop(icd, &current_crop);
@@ -1205,13 +1195,23 @@ static int soc_camera_probe(struct device *dev)
 	struct v4l2_subdev *sd;
 	struct v4l2_mbus_framefmt mf;
 	int ret;
-
+	// honghaishe_test  hhs_1219 start
+	unsigned int hhs_pwn_pin = 0;
+	int pin_level=0;
+     // honghaishen_test hhs_1219 end
 	ret = regulator_bulk_get(icd->pdev, icl->num_regulators,
 				 icl->regulators);
 	if (ret < 0)
 		goto ereg;
-
-	ret = soc_camera_power_set(icd, icl, 1);
+	// honghaishe_test  hhs_1219 start   for camera compatibility
+	hhs_pwn_pin = icl->get_pwdpin(icd->pdev,&pin_level);
+	printk("honghaishen_test pin is %d and level is %d\n",hhs_pwn_pin,pin_level);
+	if(hhs_pwn_pin == RK30_PIN3_PB4)
+		gpio_set_value(RK30_PIN3_PB5,pin_level);
+	else if(hhs_pwn_pin == RK30_PIN3_PB5)
+		gpio_set_value(RK30_PIN3_PB4,pin_level);
+	// honghaishen_test hhs_1219 end
+	//ret = soc_camera_power_set(icd, icl, 1);
 	if (ret < 0)
 		goto epower;
 
@@ -1294,8 +1294,8 @@ static int soc_camera_probe(struct device *dev)
 		dev_warn(&icd->dev, "Failed creating the control symlink\n");
 
 	ici->ops->remove(icd);
-
-	soc_camera_power_set(icd, icl, 0);
+	icl->powerdown(icd->pdev, 1); 
+	//soc_camera_power_set(icd, icl, 0);
 
 	mutex_unlock(&icd->video_lock);
     printk("Probe %s success\n", dev_name(icd->pdev));
@@ -1317,7 +1317,8 @@ eadddev:
 evdc:
 	ici->ops->remove(icd);
 eadd:
-	soc_camera_power_set(icd, icl, 0);
+	//soc_camera_power_set(icd, icl, 0);
+	icl->powerdown(icd->pdev, 1); 
 epower:
 	regulator_bulk_free(icl->num_regulators, icl->regulators);
 ereg:

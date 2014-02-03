@@ -75,7 +75,7 @@
 #include <linux/mpu.h>
 #endif
 
-#include "board-rk30-sdk-camera.c"
+#include "board-rk30-maxwell2plus-camera.c"
 
 #include <plat/key.h>
 static struct rk29_keys_button key_button[] = {

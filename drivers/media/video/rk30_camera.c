@@ -940,6 +940,7 @@ static void rk30_camera_request_reserve_mem(void)
     int i,max_resolution;
     int cam_ipp_mem=PMEM_CAMIPP_NECESSARY, cam_pmem=PMEM_CAM_NECESSARY;
 
+/*
     i =0;
     max_resolution = 0x00;
     while (strstr(new_camera[i].dev.device_info.dev.init_name,"end")==NULL) {
@@ -1003,7 +1004,7 @@ static void rk30_camera_request_reserve_mem(void)
             break;
         }
     }
-
+*/
     
 
 #ifdef CONFIG_VIDEO_RK29_WORK_IPP
@@ -1063,6 +1064,7 @@ static int rk_register_camera_devices(void)
     }
 
     
+/*
     i=0;
     new_camera = rk_camera_platform_data.register_dev_new;
     if (new_camera != NULL) {
@@ -1075,6 +1077,7 @@ static int rk_register_camera_devices(void)
             new_camera++;
         }
     }
+*/
     #if RK_SUPPORT_CIF0
     if (host_registered_0) {
         platform_device_register(&rk_device_camera_host_0);
@@ -1092,8 +1095,8 @@ static int rk_register_camera_devices(void)
         }
     }
 
-    if (rk_camera_platform_data.sensor_register)
-       (rk_camera_platform_data.sensor_register)(); 
+//    if (rk_camera_platform_data.sensor_register)
+//       (rk_camera_platform_data.sensor_register)(); 
     
  #if PMEM_CAM_NECESSARY
     platform_device_register(&android_pmem_cam_device);
