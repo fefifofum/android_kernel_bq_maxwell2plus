@@ -481,8 +481,8 @@ module_param(camera_debug, int, S_IRUGO|S_IWUSR);
 
 #define SENSOR_NAME_0 STR(CONFIG_SENSOR_0)			/* back camera sensor 0 */
 #define SENSOR_NAME_1 STR(CONFIG_SENSOR_1)			/* front camera sensor 0 */
-#define SENSOR_DEVICE_NAME_0  STR(CONS(CONFIG_SENSOR_0, _back))
-#define SENSOR_DEVICE_NAME_1  STR(CONS(CONFIG_SENSOR_1, _front))
+#define SENSOR_DEVICE_NAME_0  STR(CONS(CONFIG_SENSOR_0, ))
+#define SENSOR_DEVICE_NAME_1  STR(CONS(CONFIG_SENSOR_1, ))
 #ifdef CONFIG_SENSOR_01
 #define SENSOR_NAME_01 STR(CONFIG_SENSOR_01)			/* back camera sensor 1 */
 #define SENSOR_DEVICE_NAME_01  STR(CONS(CONFIG_SENSOR_01, _back_1))

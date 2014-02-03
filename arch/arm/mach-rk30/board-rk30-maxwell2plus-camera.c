@@ -56,7 +56,7 @@ static void all_rk_cif_power(int on,enum rk29camera_vdd_val vdd_val)
 	ldo_28 = regulator_get(NULL, "act_ldo8");	// vcc28_cif
 	ldo_18 = regulator_get(NULL, "act_ldo3");	// vcc18_cif
 	if (ldo_28 == NULL || IS_ERR(ldo_28) || ldo_18 == NULL || IS_ERR(ldo_18)){
-        printk("get cif ldo failed!\n");
+//        printk("get cif ldo failed!\n");
 		return;
 	    }
     if(on == 0){	
@@ -91,11 +91,11 @@ static void rk_cif_power(struct rk29camera_gpio_res *res,int on,enum rk29camera_
 	int camera_power = res->gpio_power;
 	int camera_ioflag = res->gpio_flag;
 	int camera_io_init = res->gpio_init;
-	printk("honghaishen_0626 camera power is %d",on);
+//	printk("honghaishen_0626 camera power is %d",on);
 	ldo_28 = regulator_get(NULL, "act_ldo8");	// vcc28_cif
 	ldo_18 = regulator_get(NULL, "act_ldo3");	// vcc18_cif
 	if (ldo_28 == NULL || IS_ERR(ldo_28) || ldo_18 == NULL || IS_ERR(ldo_18)){
-        printk("get cif ldo failed!\n");
+//        printk("get cif ldo failed!\n");
 		return;
 	    }
     if(on == 0) {	
